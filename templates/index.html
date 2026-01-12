@@ -11,7 +11,7 @@
             --border: #e4e4e7;
             --text-primary: #18181b;
             --text-secondary: #71717a;
-            --accent: #18181b; /* Noir presque pur */
+            --accent: #18181b;
             --accent-hover: #27272a;
             --success: #10b981;
             --error: #ef4444;
@@ -34,7 +34,6 @@
             margin: 0 auto;
         }
 
-        /* HEADER & STATUS */
         header {
             display: flex;
             justify-content: space-between;
@@ -44,7 +43,23 @@
             padding-bottom: 1rem;
         }
 
-        h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.025em; }
+        h1 { 
+            font-size: 1.25rem; 
+            font-weight: 600; 
+            letter-spacing: -0.025em; 
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .parallel-badge {
+            font-size: 0.7rem;
+            background: var(--success);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
         
         .status-bar { display: flex; gap: 1.5rem; font-size: 0.875rem; }
         .status-item { display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); }
@@ -52,7 +67,6 @@
         .dot.active { background-color: var(--success); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
         .dot.error { background-color: var(--error); }
 
-        /* INPUT SECTION */
         .input-group { margin-bottom: 3rem; }
         
         textarea {
@@ -85,7 +99,6 @@
         button:hover { background-color: var(--accent-hover); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* RESULTS */
         .hidden { display: none; }
         
         .section-title {
@@ -121,20 +134,24 @@
             padding-bottom: 0.5rem;
         }
 
-        .model-tag { font-family: var(--font-mono); font-size: 0.75rem; background: var(--bg); padding: 2px 6px; border-radius: 4px; }
+        .model-tag { 
+            font-family: var(--font-mono); 
+            font-size: 0.75rem; 
+            background: var(--bg); 
+            padding: 2px 6px; 
+            border-radius: 4px; 
+        }
 
         .prose { font-size: 0.95rem; white-space: pre-wrap; }
 
-        /* FINAL SYNTHESIS */
         .synthesis-card {
             background: var(--surface);
-            border: 1px solid var(--text-primary); /* Bordure noire pour marquer l'importance */
+            border: 1px solid var(--text-primary);
             border-radius: 8px;
             padding: 2rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
-        /* LOGS / LOADING */
         .log-terminal {
             font-family: var(--font-mono);
             font-size: 0.8rem;
@@ -143,6 +160,53 @@
             padding: 1rem;
             background: #f4f4f5;
             border-radius: 6px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .timing-info {
+            display: flex;
+            gap: 1.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .timing-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .timing-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+
+        .timing-value {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            width: 0%;
+            transition: width 0.3s ease;
         }
     </style>
 </head>
@@ -150,7 +214,10 @@
 
     <div class="layout">
         <header>
-            <h1>Orchestrator</h1>
+            <h1>
+                Orchestrator
+                <span class="parallel-badge">⚡ PARALLEL</span>
+            </h1>
             <div class="status-bar" id="statusBar">
                 <div class="status-item"><span class="dot" id="dot-m1"></span> M1</div>
                 <div class="status-item"><span class="dot" id="dot-m2"></span> M2</div>
@@ -165,6 +232,9 @@
                     <button onclick="runConsensus()" id="runBtn">Initialize Consensus</button>
                     <span id="timer" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);"></span>
                 </div>
+                <div class="progress-bar hidden" id="progressBar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
                 <div id="logs" class="log-terminal hidden">System ready.</div>
             </div>
 
@@ -177,6 +247,7 @@
                         <span class="model-tag" id="chairModel"></span>
                     </div>
                     <div class="prose" id="finalText"></div>
+                    <div class="timing-info" id="timingInfo"></div>
                 </div>
 
                 <div style="margin-top: 3rem;"></div>
@@ -218,7 +289,7 @@
         setInterval(checkHealth, 60000);
         checkHealth();
 
-        // Main Logic
+        // Main Logic with Progress
         async function runConsensus() {
             const query = document.getElementById('queryInput').value;
             if(!query) return;
@@ -227,21 +298,36 @@
             const logs = document.getElementById('logs');
             const results = document.getElementById('results');
             const timer = document.getElementById('timer');
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
 
             // Reset UI
             btn.disabled = true;
             btn.innerText = "Processing...";
             logs.classList.remove('hidden');
-            logs.innerText = "> Initializing sequence...\n> Dispatching to nodes...";
+            logs.innerText = "> Initializing parallel execution...\n> Dispatching to all nodes simultaneously...";
             results.classList.add('hidden');
+            progressBar.classList.remove('hidden');
+            progressFill.style.width = '0%';
             
             let seconds = 0;
             const interval = setInterval(() => {
                 seconds++;
                 timer.innerText = `${seconds}s elapsed`;
-                if(seconds === 5) logs.innerText += "\n> Waiting for inference (Stage 1)...";
-                if(seconds === 45) logs.innerText += "\n> Collecting peer reviews (Stage 2)...";
-                if(seconds === 90) logs.innerText += "\n> Synthesizing final output (Stage 3)...";
+                
+                // Simulate progress
+                let progress = Math.min((seconds / 60) * 100, 90);
+                progressFill.style.width = `${progress}%`;
+                
+                if(seconds === 2) {
+                    logs.innerText += "\n> ⚡ Stage 1: All members generating answers in parallel...";
+                }
+                if(seconds === 15) {
+                    logs.innerText += "\n> ⚡ Stage 2: All members reviewing in parallel...";
+                }
+                if(seconds === 30) {
+                    logs.innerText += "\n> Stage 3: Chairman synthesizing final output...";
+                }
             }, 1000);
 
             try {
@@ -253,12 +339,36 @@
                 
                 const data = await req.json();
                 clearInterval(interval);
+                progressFill.style.width = '100%';
 
                 if(data.error) throw new Error(data.error);
 
                 // Render Final
                 document.getElementById('finalText').innerText = data.stage3_synthesis.final_answer || "No synthesis produced.";
                 document.getElementById('chairModel').innerText = data.stage3_synthesis.model || "Unknown";
+
+                // Render Timing Info
+                if(data.timing) {
+                    const timingHtml = `
+                        <div class="timing-item">
+                            <span class="timing-label">Total Time</span>
+                            <span class="timing-value">${data.timing.total.toFixed(1)}s</span>
+                        </div>
+                        <div class="timing-item">
+                            <span class="timing-label">Stage 1 (Parallel)</span>
+                            <span class="timing-value">${data.timing.stage1.toFixed(1)}s</span>
+                        </div>
+                        <div class="timing-item">
+                            <span class="timing-label">Stage 2 (Parallel)</span>
+                            <span class="timing-value">${data.timing.stage2.toFixed(1)}s</span>
+                        </div>
+                        <div class="timing-item">
+                            <span class="timing-label">Stage 3</span>
+                            <span class="timing-value">${data.timing.stage3.toFixed(1)}s</span>
+                        </div>
+                    `;
+                    document.getElementById('timingInfo').innerHTML = timingHtml;
+                }
 
                 // Render Answers
                 const answersHtml = data.stage1_answers.map(a => `
@@ -287,15 +397,21 @@
                 document.getElementById('reviewsGrid').innerHTML = reviewsHtml;
 
                 results.classList.remove('hidden');
-                logs.classList.add('hidden');
+                logs.innerText += `\n\n✓ Complete! Total time: ${data.timing.total.toFixed(1)}s`;
+                setTimeout(() => {
+                    logs.classList.add('hidden');
+                    progressBar.classList.add('hidden');
+                }, 3000);
 
             } catch (e) {
-                logs.innerText += `\n\nFATAL ERROR: ${e.message}`;
+                logs.innerText += `\n\n✗ FATAL ERROR: ${e.message}`;
                 logs.style.color = "var(--error)";
                 clearInterval(interval);
+                progressBar.classList.add('hidden');
             } finally {
                 btn.disabled = false;
                 btn.innerText = "Initialize Consensus";
+                timer.innerText = '';
             }
         }
     </script>
