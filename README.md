@@ -152,26 +152,6 @@ set PORT=5000
 python chairman.py
 ```
 
-### Step 3: Test the System
-
-1. On **any PC** connected to the same WiFi, open a browser
-2. Go to: `http://192.168.137.101:8080` (replace with PC #1's IP)
-3. Click **"Refresh Status"** - all services should show "healthy"
-4. Enter a question and click **"Submit to Council"**
-
-## Troubleshooting
-
-### Services Show "Unreachable"
-
-**Problem**: Firewall blocking connections
-
-**Solution**:
-```bash
-# Windows: Allow Python through firewall
-# Go to: Windows Defender Firewall → Allow an app
-
-# Or temporarily disable firewall for testing (not recommended for production)
-```
 
 ### "Connection refused" errors
 
@@ -200,31 +180,12 @@ python chairman.py
 ollama pull llama2
 ```
 
-## Quick Reference: Command Cheat Sheet
-
-```bash
-# Check if Ollama is running
-ollama list
-
-# Download a model
-ollama pull llama2
-
-# Test Ollama directly
-ollama run llama2 "Hello"
-
-# Check what's using port 5001
-netstat -an | findstr :5001
-
-# Find your IP address
-ipconfig              # Windows
-ifconfig              # Mac/Linux
-```
 
 ## Models We Used
 
 - **Council Member 1**: llama2 (7B parameters)
 - **Council Member 2**: mistral (7B parameters)
-- **Chairman**: llama2 (7B parameters)
+- **Chairman**: phi (2.7B parameters)
 
 ## Key Design Decisions
 
@@ -234,25 +195,12 @@ ifconfig              # Mac/Linux
 4. **Tabbed UI**: Allows inspection of individual model responses
 5. **Health Checks**: Real-time monitoring of all services
 
-## Improvements Over Original
-
-1. ✅ **Fully Local**: No cloud APIs, complete privacy
-2. ✅ **Distributed Architecture**: Real multi-machine deployment
-3. ✅ **Health Monitoring**: Visual status dashboard
-4. ✅ **Better UI**: Modern, responsive design with tabs
-5. ✅ **Error Handling**: Graceful failures and timeouts
-6. ✅ **Easy Configuration**: Environment variables for all settings
 
 ## Network Configuration Details
 
 ### WiFi Hotspot Setup
 
-The WiFi hotspot creator's PC typically gets IP: `192.168.137.1`
-
-Other devices get IPs like:
-- `192.168.137.101`
-- `192.168.137.102`
-- `192.168.137.103`
+The project works because of a Wifi Hotspot. All PCs are connected to the same wifi hotspot that permits to avoid regular wifi restruction (like the communication between members).
 
 ### Port Usage
 
@@ -275,19 +223,7 @@ Before the demo:
 - [ ] Health check shows all services "healthy"
 - [ ] Test query completes successfully through all 3 stages
 
-## Demo Script
-
-1. Show the network setup (3 PCs)
-2. Open browser to frontend
-3. Click "Refresh Status" → show all healthy
-4. Enter query: "What is machine learning?"
-5. Show Stage 1: Different answers from each model
-6. Show Stage 2: Each model's review/ranking
-7. Show Stage 3: Chairman's synthesized answer
-8. Optional: Show logs on each PC running
-
 ## Generative AI Usage Statement
-
 We used Claude (Anthropic) for:
 - Initial code structure and Flask setup
 - Debugging network connection issues
@@ -300,14 +236,9 @@ We wrote ourselves:
 - Team coordination
 - Final integration and demo preparation
 
+
 ## License
 
 MIT License - Educational Project
 
-## Contact
-
-[Your contact information]
-
 ---
-
-**Note**: Remember to replace all example IP addresses with your actual IP addresses!
