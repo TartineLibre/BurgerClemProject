@@ -6,6 +6,7 @@ import config
 app = Flask(__name__)
 CORS(app)
 
+# Use configuration from config.py
 COUNCIL_MEMBERS = config.COUNCIL_MEMBERS
 CHAIRMAN_URL = config.CHAIRMAN_URL
 
@@ -27,6 +28,7 @@ def health_check():
         'chairman': None
     }
     
+    # Check council members
     for member in COUNCIL_MEMBERS:
         try:
             response = requests.get(f"{member['url']}/health", timeout=5)
@@ -48,6 +50,7 @@ def health_check():
                 'error': str(e)
             })
     
+    # Check chairman
     try:
         response = requests.get(f"{CHAIRMAN_URL}/health", timeout=5)
         if response.status_code == 200:
@@ -79,7 +82,7 @@ def submit_query():
         print(f"NEW QUERY: {query}")
         print(f"{'='*60}\n")
         
-        # Stage 1
+        # Stage 1: Collect answers from all council members
         print("STAGE 1: Collecting answers from council members...")
         answers = []
         for member in COUNCIL_MEMBERS:
@@ -88,7 +91,7 @@ def submit_query():
                 response = requests.post(
                     f"{member['url']}/answer",
                     json={'query': query},
-                    timeout=120
+                    timeout=300
                 )
                 if response.status_code == 200:
                     answer = response.json()
@@ -102,7 +105,7 @@ def submit_query():
         
         print(f"\nStage 1 complete: {len(answers)} answers received\n")
         
-        # Stage 2
+        # Stage 2: Get reviews from all council members
         print("STAGE 2: Collecting reviews...")
         reviews = []
         for member in COUNCIL_MEMBERS:
@@ -111,7 +114,7 @@ def submit_query():
                 response = requests.post(
                     f"{member['url']}/review",
                     json={'query': query, 'answers': answers},
-                    timeout=120
+                    timeout=300
                 )
                 if response.status_code == 200:
                     review = response.json()
@@ -122,7 +125,7 @@ def submit_query():
         
         print(f"\nStage 2 complete: {len(reviews)} reviews received\n")
         
-        # Stage 3
+        # Stage 3: Get chairman synthesis
         print("STAGE 3: Getting chairman synthesis...")
         try:
             print(f"  → Requesting synthesis from chairman...")
@@ -133,7 +136,7 @@ def submit_query():
                     'answers': answers,
                     'reviews': reviews
                 },
-                timeout=180
+                timeout=400
             )
             
             if chairman_response.status_code == 200:

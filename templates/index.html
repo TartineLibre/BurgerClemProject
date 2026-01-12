@@ -3,516 +3,300 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LLM Council - Local Deployment</title>
+    <title>Orchestrator // Local Consensus</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        :root {
+            --bg: #fafafa;
+            --surface: #ffffff;
+            --border: #e4e4e7;
+            --text-primary: #18181b;
+            --text-secondary: #71717a;
+            --accent: #18181b; /* Noir presque pur */
+            --accent-hover: #27272a;
+            --success: #10b981;
+            --error: #ef4444;
+            --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
         }
-        
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: var(--font-sans);
+            background-color: var(--bg);
+            color: var(--text-primary);
+            line-height: 1.5;
+            padding: 2rem;
         }
-        
-        .container {
-            max-width: 1200px;
+
+        .layout {
+            max-width: 1000px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
         }
+
+        /* HEADER & STATUS */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 3rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 1rem;
+        }
+
+        h1 { font-size: 1.25rem; font-weight: 600; letter-spacing: -0.025em; }
         
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        
-        .header p {
-            font-size: 1.1em;
-            opacity: 0.9;
-        }
-        
-        .health-status {
-            padding: 20px 30px;
-            background: #f8f9fa;
-            border-bottom: 2px solid #e9ecef;
-        }
-        
-        .health-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-        
-        .status-card {
-            background: white;
-            padding: 15px;
-            border-radius: 10px;
-            border-left: 4px solid #6c757d;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .status-card.healthy {
-            border-left-color: #28a745;
-        }
-        
-        .status-card.unhealthy {
-            border-left-color: #dc3545;
-        }
-        
-        .status-card h3 {
-            font-size: 1em;
-            margin-bottom: 8px;
-            color: #495057;
-        }
-        
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: bold;
-        }
-        
-        .status-badge.healthy {
-            background: #d4edda;
-            color: #155724;
-        }
-        
-        .status-badge.unhealthy {
-            background: #f8d7da;
-            color: #721c24;
-        }
-        
-        .main-content {
-            padding: 30px;
-        }
-        
-        .query-section {
-            margin-bottom: 30px;
-        }
-        
-        .query-section h2 {
-            color: #495057;
-            margin-bottom: 15px;
-        }
+        .status-bar { display: flex; gap: 1.5rem; font-size: 0.875rem; }
+        .status-item { display: flex; align-items: center; gap: 0.5rem; color: var(--text-secondary); }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--border); }
+        .dot.active { background-color: var(--success); box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+        .dot.error { background-color: var(--error); }
+
+        /* INPUT SECTION */
+        .input-group { margin-bottom: 3rem; }
         
         textarea {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #dee2e6;
-            border-radius: 10px;
-            font-size: 1em;
+            min-height: 120px;
+            padding: 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
             font-family: inherit;
+            font-size: 1rem;
             resize: vertical;
-            min-height: 100px;
+            transition: border-color 0.2s;
+            margin-bottom: 1rem;
         }
-        
-        textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        
+
+        textarea:focus { outline: none; border-color: var(--accent); }
+
         button {
-            padding: 12px 30px;
+            background-color: var(--accent);
+            color: white;
             border: none;
-            border-radius: 8px;
-            font-size: 1em;
-            font-weight: bold;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: background 0.2s;
         }
+
+        button:hover { background-color: var(--accent-hover); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* RESULTS */
+        .hidden { display: none; }
         
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .section-title {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            font-weight: 600;
         }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
         }
-        
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
         }
-        
-        .btn-secondary:hover {
-            background: #5a6268;
-        }
-        
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        
-        .loading {
-            text-align: center;
-            padding: 30px;
-            color: #667eea;
-        }
-        
-        .loading::after {
-            content: '...';
-            animation: dots 1.5s infinite;
-        }
-        
-        @keyframes dots {
-            0%, 20% { content: '.'; }
-            40% { content: '..'; }
-            60%, 100% { content: '...'; }
-        }
-        
-        .results-section {
-            margin-top: 30px;
-        }
-        
-        .stage {
-            margin-bottom: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .stage h3 {
-            color: #495057;
-            margin-bottom: 15px;
+
+        .card-header {
             display: flex;
-            align-items: center;
-            gap: 10px;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--bg);
+            padding-bottom: 0.5rem;
         }
-        
-        .stage-badge {
-            background: #667eea;
-            color: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 0.8em;
-        }
-        
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .tab {
-            padding: 10px 20px;
-            background: white;
-            border: 2px solid #dee2e6;
+
+        .model-tag { font-family: var(--font-mono); font-size: 0.75rem; background: var(--bg); padding: 2px 6px; border-radius: 4px; }
+
+        .prose { font-size: 0.95rem; white-space: pre-wrap; }
+
+        /* FINAL SYNTHESIS */
+        .synthesis-card {
+            background: var(--surface);
+            border: 1px solid var(--text-primary); /* Bordure noire pour marquer l'importance */
             border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
+            padding: 2rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
-        
-        .tab:hover {
-            border-color: #667eea;
-        }
-        
-        .tab.active {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-        
-        .tab-content {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .answer-box, .review-box {
-            margin-bottom: 15px;
-        }
-        
-        .answer-box h4, .review-box h4 {
-            color: #495057;
-            margin-bottom: 10px;
-        }
-        
-        .answer-text, .review-text {
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            line-height: 1.6;
-            white-space: pre-wrap;
-        }
-        
-        .final-answer {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            padding: 20px;
-            border-radius: 10px;
-            border: 2px solid #667eea;
-        }
-        
-        .final-answer h4 {
-            color: #667eea;
-            margin-bottom: 15px;
-        }
-        
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
+
+        /* LOGS / LOADING */
+        .log-terminal {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f4f4f5;
+            border-radius: 6px;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>🤖 LLM Council</h1>
-            <p>Distributed Multi-LLM Reasoning System</p>
-        </div>
-        
-        <div class="health-status">
-            <h2>System Status</h2>
-            <button class="btn-secondary" onclick="checkHealth()" style="margin-top: 10px;">Refresh Status</button>
-            <div class="health-grid" id="healthGrid">
-                <div class="status-card">
-                    <h3>Council Member 1</h3>
-                    <span class="status-badge">Checking...</span>
-                </div>
-                <div class="status-card">
-                    <h3>Council Member 2</h3>
-                    <span class="status-badge">Checking...</span>
-                </div>
-                <div class="status-card">
-                    <h3>Chairman</h3>
-                    <span class="status-badge">Checking...</span>
-                </div>
+
+    <div class="layout">
+        <header>
+            <h1>Orchestrator</h1>
+            <div class="status-bar" id="statusBar">
+                <div class="status-item"><span class="dot" id="dot-m1"></span> M1</div>
+                <div class="status-item"><span class="dot" id="dot-m2"></span> M2</div>
+                <div class="status-item"><span class="dot" id="dot-chair"></span> Chair</div>
             </div>
-        </div>
-        
-        <div class="main-content">
-            <div class="query-section">
-                <h2>Submit Query to Council</h2>
-                <textarea id="queryInput" placeholder="Enter your question here..."></textarea>
-                <div class="button-group">
-                    <button class="btn-primary" onclick="submitQuery()" id="submitBtn">Submit to Council</button>
+        </header>
+
+        <main>
+            <div class="input-group">
+                <textarea id="queryInput" placeholder="Enter prompt for the council..."></textarea>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button onclick="runConsensus()" id="runBtn">Initialize Consensus</button>
+                    <span id="timer" style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);"></span>
                 </div>
+                <div id="logs" class="log-terminal hidden">System ready.</div>
             </div>
-            
-            <div id="loadingIndicator" style="display: none;">
-                <div class="loading">Processing your query through the LLM Council</div>
+
+            <div id="results" class="hidden">
+                <!-- Final Result First -->
+                <div class="section-title">Final Synthesis</div>
+                <div class="synthesis-card">
+                    <div class="card-header">
+                        <span>Chairman Decision</span>
+                        <span class="model-tag" id="chairModel"></span>
+                    </div>
+                    <div class="prose" id="finalText"></div>
+                </div>
+
+                <div style="margin-top: 3rem;"></div>
+
+                <!-- Details below -->
+                <details>
+                    <summary style="cursor: pointer; color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;">View Council Deliberations</summary>
+                    
+                    <div class="section-title" style="margin-top: 1.5rem;">Member Responses</div>
+                    <div class="grid" id="answersGrid"></div>
+
+                    <div class="section-title">Peer Reviews</div>
+                    <div class="grid" id="reviewsGrid"></div>
+                </details>
             </div>
-            
-            <div id="resultsSection" class="results-section" style="display: none;">
-            </div>
-        </div>
+        </main>
     </div>
-    
+
     <script>
-        let currentResults = null;
-        
-        window.onload = function() {
-            checkHealth();
-        };
-        
-        function checkHealth() {
-            fetch('/health_check')
-                .then(response => response.json())
-                .then(data => {
-                    displayHealthStatus(data);
-                })
-                .catch(error => {
-                    console.error('Health check failed:', error);
+        // Update Status
+        async function checkHealth() {
+            try {
+                const res = await fetch('/health_check');
+                const data = await res.json();
+                
+                updateDot('dot-m1', data.council_members[0]?.status === 'healthy');
+                updateDot('dot-m2', data.council_members[1]?.status === 'healthy');
+                updateDot('dot-chair', data.chairman?.status === 'healthy');
+            } catch (e) {
+                console.log("Health check silent fail");
+            }
+        }
+
+        function updateDot(id, isHealthy) {
+            const el = document.getElementById(id);
+            el.className = isHealthy ? 'dot active' : 'dot error';
+        }
+
+        setInterval(checkHealth, 60000);
+        checkHealth();
+
+        // Main Logic
+        async function runConsensus() {
+            const query = document.getElementById('queryInput').value;
+            if(!query) return;
+
+            const btn = document.getElementById('runBtn');
+            const logs = document.getElementById('logs');
+            const results = document.getElementById('results');
+            const timer = document.getElementById('timer');
+
+            // Reset UI
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+            logs.classList.remove('hidden');
+            logs.innerText = "> Initializing sequence...\n> Dispatching to nodes...";
+            results.classList.add('hidden');
+            
+            let seconds = 0;
+            const interval = setInterval(() => {
+                seconds++;
+                timer.innerText = `${seconds}s elapsed`;
+                if(seconds === 5) logs.innerText += "\n> Waiting for inference (Stage 1)...";
+                if(seconds === 45) logs.innerText += "\n> Collecting peer reviews (Stage 2)...";
+                if(seconds === 90) logs.innerText += "\n> Synthesizing final output (Stage 3)...";
+            }, 1000);
+
+            try {
+                const req = await fetch('/submit_query', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({query})
                 });
-        }
-        
-        function displayHealthStatus(data) {
-            const grid = document.getElementById('healthGrid');
-            grid.innerHTML = '';
-            
-            data.council_members.forEach((member, index) => {
-                const card = document.createElement('div');
-                card.className = `status-card ${member.status === 'healthy' ? 'healthy' : 'unhealthy'}`;
-                card.innerHTML = `
-                    <h3>Council Member ${index + 1}</h3>
-                    <span class="status-badge ${member.status === 'healthy' ? 'healthy' : 'unhealthy'}">
-                        ${member.status}
-                    </span>
-                    ${member.data ? `<p style="margin-top: 8px; font-size: 0.9em; color: #6c757d;">Model: ${member.data.model}</p>` : ''}
-                `;
-                grid.appendChild(card);
-            });
-            
-            const chairmanCard = document.createElement('div');
-            chairmanCard.className = `status-card ${data.chairman?.status === 'healthy' ? 'healthy' : 'unhealthy'}`;
-            chairmanCard.innerHTML = `
-                <h3>Chairman</h3>
-                <span class="status-badge ${data.chairman?.status === 'healthy' ? 'healthy' : 'unhealthy'}">
-                    ${data.chairman?.status || 'unknown'}
-                </span>
-                ${data.chairman?.data ? `<p style="margin-top: 8px; font-size: 0.9em; color: #6c757d;">Model: ${data.chairman.data.model}</p>` : ''}
-            `;
-            grid.appendChild(chairmanCard);
-        }
-        
-        function submitQuery() {
-            const query = document.getElementById('queryInput').value.trim();
-            if (!query) {
-                alert('Please enter a query');
-                return;
-            }
-            
-            document.getElementById('submitBtn').disabled = true;
-            document.getElementById('loadingIndicator').style.display = 'block';
-            document.getElementById('resultsSection').style.display = 'none';
-            
-            fetch('/submit_query', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ query: query })
-            })
-            .then(response => response.json())
-            .then(data => {
-                currentResults = data;
-                displayResults(data);
-                document.getElementById('submitBtn').disabled = false;
-                document.getElementById('loadingIndicator').style.display = 'none';
-                document.getElementById('resultsSection').style.display = 'block';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                document.getElementById('loadingIndicator').innerHTML = `
-                    <div class="error">Error: ${error.message}</div>
-                `;
-                document.getElementById('submitBtn').disabled = false;
-            });
-        }
-        
-        function displayResults(data) {
-            const section = document.getElementById('resultsSection');
-            section.innerHTML = `
-                <div class="stage">
-                    <h3><span class="stage-badge">Stage 1</span> First Opinions</h3>
-                    <div class="tabs" id="stage1Tabs"></div>
-                    <div id="stage1Content"></div>
-                </div>
                 
-                <div class="stage">
-                    <h3><span class="stage-badge">Stage 2</span> Reviews & Rankings</h3>
-                    <div class="tabs" id="stage2Tabs"></div>
-                    <div id="stage2Content"></div>
-                </div>
-                
-                <div class="stage">
-                    <h3><span class="stage-badge">Stage 3</span> Chairman Synthesis</h3>
-                    <div class="final-answer">
-                        <h4>Final Answer:</h4>
-                        <div class="answer-text">${data.stage3_synthesis.final_answer || 'No synthesis available'}</div>
+                const data = await req.json();
+                clearInterval(interval);
+
+                if(data.error) throw new Error(data.error);
+
+                // Render Final
+                document.getElementById('finalText').innerText = data.stage3_synthesis.final_answer || "No synthesis produced.";
+                document.getElementById('chairModel').innerText = data.stage3_synthesis.model || "Unknown";
+
+                // Render Answers
+                const answersHtml = data.stage1_answers.map(a => `
+                    <div class="card">
+                        <div class="card-header">
+                            <b>${a.member_id}</b>
+                            <span class="model-tag">${a.model}</span>
+                        </div>
+                        <div class="prose">${a.answer}</div>
                     </div>
-                </div>
-            `;
-            
-            if (data.stage1_answers) {
-                displayStage1(data.stage1_answers);
-            }
-            
-            if (data.stage2_reviews) {
-                displayStage2(data.stage2_reviews);
-            }
-        }
-        
-        function displayStage1(answers) {
-            const tabsContainer = document.getElementById('stage1Tabs');
-            const contentContainer = document.getElementById('stage1Content');
-            
-            answers.forEach((answer, index) => {
-                const tab = document.createElement('div');
-                tab.className = `tab ${index === 0 ? 'active' : ''}`;
-                tab.textContent = answer.member_id;
-                tab.onclick = () => showStage1Tab(index);
-                tabsContainer.appendChild(tab);
-            });
-            
-            showStage1Tab(0);
-        }
-        
-        function showStage1Tab(index) {
-            const answers = currentResults.stage1_answers;
-            const contentContainer = document.getElementById('stage1Content');
-            
-            const tabs = document.getElementById('stage1Tabs').children;
-            for (let i = 0; i < tabs.length; i++) {
-                tabs[i].classList.toggle('active', i === index);
-            }
-            
-            const answer = answers[index];
-            contentContainer.innerHTML = `
-                <div class="tab-content">
-                    <div class="answer-box">
-                        <h4>Model: ${answer.model}</h4>
-                        <div class="answer-text">${answer.answer}</div>
+                `).join('');
+                document.getElementById('answersGrid').innerHTML = answersHtml;
+
+                // Render Reviews
+                const reviewsHtml = data.stage2_reviews.map(r => `
+                    <div class="card">
+                        <div class="card-header">
+                            <b>${r.member_id} Review</b>
+                        </div>
+                        <div class="prose" style="font-size: 0.85rem">
+                            <strong>Ranking:</strong> ${r.ranking ? r.ranking.join(', ') : 'N/A'}<br><br>
+                            ${r.reasoning}
+                        </div>
                     </div>
-                </div>
-            `;
-        }
-        
-        function displayStage2(reviews) {
-            const tabsContainer = document.getElementById('stage2Tabs');
-            const contentContainer = document.getElementById('stage2Content');
-            
-            reviews.forEach((review, index) => {
-                const tab = document.createElement('div');
-                tab.className = `tab ${index === 0 ? 'active' : ''}`;
-                tab.textContent = review.member_id;
-                tab.onclick = () => showStage2Tab(index);
-                tabsContainer.appendChild(tab);
-            });
-            
-            showStage2Tab(0);
-        }
-        
-        function showStage2Tab(index) {
-            const reviews = currentResults.stage2_reviews;
-            const contentContainer = document.getElementById('stage2Content');
-            
-            const tabs = document.getElementById('stage2Tabs').children;
-            for (let i = 0; i < tabs.length; i++) {
-                tabs[i].classList.toggle('active', i === index);
+                `).join('');
+                document.getElementById('reviewsGrid').innerHTML = reviewsHtml;
+
+                results.classList.remove('hidden');
+                logs.classList.add('hidden');
+
+            } catch (e) {
+                logs.innerText += `\n\nFATAL ERROR: ${e.message}`;
+                logs.style.color = "var(--error)";
+                clearInterval(interval);
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Initialize Consensus";
             }
-            
-            const review = reviews[index];
-            contentContainer.innerHTML = `
-                <div class="tab-content">
-                    <div class="review-box">
-                        <h4>Ranking:</h4>
-                        <div class="answer-text">${review.ranking ? review.ranking.join(', ') : 'N/A'}</div>
-                    </div>
-                    <div class="review-box">
-                        <h4>Reasoning:</h4>
-                        <div class="answer-text">${review.reasoning || 'N/A'}</div>
-                    </div>
-                </div>
-            `;
         }
     </script>
 </body>
